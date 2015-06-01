@@ -1,5 +1,7 @@
 package com.example.nate.dailyselfie;
 
+import android.content.Intent;
+import android.provider.MediaStore;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -20,4 +22,7 @@ public class DailySelfieActivityFragment extends Fragment {
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_daily_selfie, container, false);
     }
+
+
+
 }
