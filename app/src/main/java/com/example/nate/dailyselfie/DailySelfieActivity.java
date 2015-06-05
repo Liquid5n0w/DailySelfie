@@ -9,6 +9,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
+import android.os.Environment;
 import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.os.Bundle;
@@ -19,7 +22,13 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 
 
 public class DailySelfieActivity extends ActionBarActivity {
@@ -69,24 +78,20 @@ public class DailySelfieActivity extends ActionBarActivity {
         Log.i(TAG, "Sys time: " + System.currentTimeMillis());
         Log.i(TAG, "set for : " + set);
 
-
+        //TODO Disabled alarm
+        /*
         mAlarmManager.setRepeating(
                 AlarmManager.RTC_WAKEUP,
                 set,
                 ALARM_DELAY,
                 mNotificationReceiverPendingIntent);
-
+*/
 
 
 
         Log.i(TAG, "Alarm set");
 
-//        receiver = new DailySelfieReceiver();
-//
-//
-//        mBroadcastMgr = LocalBroadcastManager
-//                .getInstance(getApplicationContext());
-//        mBroadcastMgr.registerReceiver(receiver, intentFilter);
+
 
 
     }
@@ -105,17 +110,122 @@ public class DailySelfieActivity extends ActionBarActivity {
     private void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+
+            // Create the File where the photo should go
+            File photoFile = null;
+            try {
+                photoFile = createImageFile();
+            } catch (IOException ex) {
+                Log.i(TAG,"Error occurred while creating the File");
+
+            }
+            // Continue only if the File was successfully created
+            if (photoFile != null) {
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
+                        Uri.fromFile(photoFile));
+                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+            }
         }
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+
+            Log.i(TAG, "Received result from image capture");
+
+            //Gets thumbnail from the intent
+/*
             Bundle extras = data.getExtras();
             Bitmap imageBitmap = (Bitmap) extras.get("data");
             ((ImageView)findViewById(R.id.imageView)).setImageBitmap(imageBitmap);
+*/
+
+
+            //Add that photo to the android gallery
+            //galleryAddPic();
+
+            Log.i(TAG, mCurrentPhotoPath);
+
+            //Set image to the imageview
+            setPic((ImageView) findViewById(R.id.imageView), mCurrentPhotoPath);
         }
     }
+
+    String mCurrentPhotoPath;
+
+    private File createImageFile() throws IOException {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",         /* suffix */
+                storageDir      /* directory */
+        );
+
+        // Save a file: path for use with ACTION_VIEW intents
+        mCurrentPhotoPath = "file:" + image.getAbsolutePath();
+        return image;
+    }
+
+    private void galleryAddPic() {
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        File f = new File(mCurrentPhotoPath);
+        Uri contentUri = Uri.fromFile(f);
+        mediaScanIntent.setData(contentUri);
+        this.sendBroadcast(mediaScanIntent);
+    }
+
+    /*
+    Managing multiple full-sized images can be tricky with limited memory. If you find
+    your application running out of memory after displaying just a few images, you can
+    dramatically reduce the amount of dynamic heap used by expanding the JPEG into a memory
+    array that's already scaled to match the size of the destination view. The following
+    example method demonstrates this technique.
+    */
+
+    private void setPic(ImageView imageView, String photoPath) {
+        // Get the dimensions of the View
+        int targetW = imageView.getWidth();
+        int targetH = imageView.getHeight();
+
+        // Get the dimensions of the bitmap
+        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+        bmOptions.inJustDecodeBounds = true;
+
+        //TODO can't find the file to open
+//        BitmapFactory.decodeFile(photoPath, bmOptions);
+
+        try {
+            BitmapFactory.decodeStream(new FileInputStream(photoPath), null, bmOptions);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        int photoW = bmOptions.outWidth;
+        int photoH = bmOptions.outHeight;
+        Log.i(TAG, "photoH: "+photoH + " photoW: "+photoW);
+        Log.i(TAG, "targetH: "+targetH + " targetW: "+targetW);
+
+        if (photoH == 0 ||photoW == 0 || targetH == 0 ||targetW == 0) {
+
+            return;
+        }
+
+        // Determine how much to scale down the image
+        int scaleFactor = Math.min(photoW/targetW, photoH/targetH);
+
+        // Decode the image file into a Bitmap sized to fill the View
+        bmOptions.inJustDecodeBounds = false;
+        bmOptions.inSampleSize = scaleFactor;
+        Bitmap bitmap = BitmapFactory.decodeFile(photoPath, bmOptions);
+
+        //Set the bitmap to the ImageView
+        imageView.setImageBitmap(bitmap);
+    }
+
 
     public void sendNotification(){
 
@@ -161,8 +271,11 @@ public class DailySelfieActivity extends ActionBarActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_take) {
-            //dispatchTakePictureIntent();
-            sendNotification();
+            //Take photo
+            dispatchTakePictureIntent();
+
+
+
         }
 
         return super.onOptionsItemSelected(item);
