@@ -209,7 +209,7 @@ public class DailySelfieActivity extends ActionBarActivity {
         Log.i(TAG, "photoH: "+photoH + " photoW: "+photoW);
         Log.i(TAG, "targetH: "+targetH + " targetW: "+targetW);
 
-        if (photoH == 0 ||photoW == 0 || targetH == 0 ||targetW == 0) {
+        if (photoH == 0 ||photoW == 0) {
 
             return;
         }
