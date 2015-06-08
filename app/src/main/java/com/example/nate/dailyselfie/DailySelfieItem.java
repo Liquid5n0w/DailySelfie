@@ -9,31 +9,22 @@ public class DailySelfieItem {
     private String path = "";
     private ImageView thumbnail;
 
-
-
+    //Model item for the array list, holds the path and the imageview
 
     public DailySelfieItem(String p){
         path = p;
 
-
-    }
-    public void setPic(ImageView i){
-        thumbnail = i;
-        DailySelfieActivity.setPic(thumbnail, path);
     }
 
-
-    public void setPath(String CompanyName)
+    public void setPath(String p)
     {
-        this.path = CompanyName;
+        this.path = p;
     }
 
-    public void setImageView(ImageView Bitmap)
+    public void setImageView(ImageView imageView)
     {
-        this.thumbnail = Bitmap;
+        this.thumbnail = imageView;
     }
-
-
 
     public String getPath()
     {

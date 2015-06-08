@@ -20,6 +20,7 @@ public class DailySelfieAdaptor extends ArrayAdapter<DailySelfieItem> {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
+
         // Get the data item for this position
         DailySelfieItem dailySelfieItem = getItem(position);
 
@@ -27,24 +28,20 @@ public class DailySelfieAdaptor extends ArrayAdapter<DailySelfieItem> {
         if (convertView == null) {
             convertView = LayoutInflater.from(getContext()).inflate(R.layout.selfieitem, parent, false);
         }
+
         // Lookup view for data population
         TextView textView = (TextView) convertView.findViewById(R.id.path);
         ImageView imageView = (ImageView) convertView.findViewById(R.id.thumbnail);
+
         // Populate the data into the template view using the data object
         textView.setText(dailySelfieItem.getPath());
-        //bitmap.setImageBitmap(dailySelfieItem.getImage());
-
         dailySelfieItem.setImageView(imageView);
 
-//        DailySelfieActivity.setPic(imageView,dailySelfieItem.getPath());
-
+        //Create a bitmap from the path
         Bitmap bitmap = BitmapFactory.decodeFile(dailySelfieItem.getPath());
 
         //Set the bitmap to the ImageView
         imageView.setImageBitmap(bitmap);
-
-        //set image to the listview
-
 
         // Return the completed view to render on screen
         return convertView;

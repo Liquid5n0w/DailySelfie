@@ -53,6 +53,7 @@ public class DailySelfieActivity extends ActionBarActivity {
     ArrayList<DailySelfieItem> dailySelfieItems;
     DailySelfieAdaptor adapter;
     ListView listView;
+    String mCurrentPhotoPath;
 
 //    private LocalBroadcastManager mBroadcastMgr;
 //    DailySelfieReceiver receiver;
@@ -66,35 +67,11 @@ public class DailySelfieActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_daily_selfie);
 
-        //setup arrayadaptor
-
 
         listView = (ListView) findViewById(R.id.listView);
-/*
-        String[] values = new String[] { "Android List View",
-                "Adapter implementation",
-                "Simple List View In Android",
-                "Create List View Android",
-                "Android Example",
-                "List View Source Code",
-                "List View Array Adapter",
-                "Android Example List View"
-        };
-        */
 
+        //setup arrayadaptor
         dailySelfieItems = new ArrayList<>();
-
-
-
-
-
-        // Define a new Adapter
-        // First parameter - Context
-        // Second parameter - Layout for the row
-        // Third parameter - ID of the TextView to which the data is written
-        // Forth - the Array of data
-
-
         adapter = new DailySelfieAdaptor(this, dailySelfieItems);
 
         // Assign adapter to ListView
@@ -116,12 +93,7 @@ public class DailySelfieActivity extends ActionBarActivity {
                 startActivity(i);
 
 
-                // Show Alert
-                /*
-                Toast.makeText(getApplicationContext(),
-                        "Position :" + position + "  ListItem : " , Toast.LENGTH_LONG)
-                        .show();
-*/
+
             }
 
         });
@@ -139,10 +111,7 @@ public class DailySelfieActivity extends ActionBarActivity {
         mNotificationReceiverPendingIntent = PendingIntent.getBroadcast(
                 mContext, 0, mNotificationReceiverIntent, 0);
 
-//        Calendar time = Calendar.getInstance();
-//        time.setTimeInMillis(System.currentTimeMillis());
-//        //Add 2 minutes
-//        time.add(Calendar.MINUTE, 2);
+
 
 
         Long set = System.currentTimeMillis()+ALARM_DELAY;
@@ -162,9 +131,13 @@ public class DailySelfieActivity extends ActionBarActivity {
         Log.i(TAG, "Alarm set");
 
 
-
+        // reload previously taken selfies
         SharedPreferences settings = getSharedPreferences(PREFS ,MODE_PRIVATE);
+
+        //returns -1 if there are no size saved.
         int size = settings.getInt("size", -1);
+
+        //Only loads if atleast one is saved
         if (size > 0){
             for (int i = 0; i<size; i++)
                 dailySelfieItems.add(new DailySelfieItem(settings.getString(""+i, "")));
@@ -177,6 +150,7 @@ public class DailySelfieActivity extends ActionBarActivity {
     public void onPause(){
         super.onPause();
 
+        //Save into prefs the paths of all of the selfies, and also how many are saved.
         SharedPreferences settings = getSharedPreferences(PREFS ,MODE_PRIVATE);
         SharedPreferences.Editor editor = settings.edit();
         editor.putInt("size", listView.getCount());
@@ -186,17 +160,12 @@ public class DailySelfieActivity extends ActionBarActivity {
 
             editor.putString("" + i, (String) pathView.getText());
         }
+        //Commit the save now
         editor.commit();
     }
 
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_daily_selfie, menu);
 
-        return true;
-    }
 
 
 
@@ -225,45 +194,24 @@ public class DailySelfieActivity extends ActionBarActivity {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
 
             Log.i(TAG, "Received result from image capture");
-
-            //Gets thumbnail from the intent
-/*
-            Bundle extras = data.getExtras();
-            Bitmap imageBitmap = (Bitmap) extras.get("data");
-            ((ImageView)findViewById(R.id.imageView)).setImageBitmap(imageBitmap);
-*/
-
-
-            //Add that photo to the android gallery
-            //galleryAddPic();
-
             Log.i(TAG, mCurrentPhotoPath);
 
+            //Add that photo to the android gallery
+            galleryAddPic();
 
-            //Set image to the imageview
-
-
-            //setPic((ImageView) findViewById(R.id.imageView), mCurrentPhotoPath);
-
-
-
-//            DailySelfieItem item = new DailySelfieItem(mCurrentPhotoPath, (ImageView) selfieItemView.findViewById(R.id.thumbnail));
+            //Make new model item for this photo
             DailySelfieItem item = new DailySelfieItem(mCurrentPhotoPath);
 
-
+            //Add item to the arraylist
             dailySelfieItems.add(item);
-//            int index = (dailySelfieItems.lastIndexOf(item));
 
-
+            //Update the UI
             adapter.notifyDataSetChanged();
-
-
-            //item.setPic((ImageView) listView.findViewById(R.id.thumbnail));
 
         }
     }
 
-    String mCurrentPhotoPath;
+
 
     private File createImageFile() throws IOException {
         // Create an image file name
@@ -290,87 +238,12 @@ public class DailySelfieActivity extends ActionBarActivity {
         this.sendBroadcast(mediaScanIntent);
     }
 
-    /*
-    Managing multiple full-sized images can be tricky with limited memory. If you find
-    your application running out of memory after displaying just a few images, you can
-    dramatically reduce the amount of dynamic heap used by expanding the JPEG into a memory
-    array that's already scaled to match the size of the destination view. The following
-    example method demonstrates this technique.
-    */
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_daily_selfie, menu);
 
-    public static void setPic(ImageView imageView, String photoPath) {
-        // Get the dimensions of the View
-        int targetW = imageView.getWidth();
-        int targetH = imageView.getHeight();
-
-        // Get the dimensions of the bitmap
-        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-        bmOptions.inJustDecodeBounds = true;
-
-
-        //BitmapFactory.decodeFile(photoPath, bmOptions);
-
-        try {
-            BitmapFactory.decodeStream(new FileInputStream(photoPath), null, bmOptions);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        int photoW = bmOptions.outWidth;
-        int photoH = bmOptions.outHeight;
-        Log.i(TAG, "photoH: "+photoH + " photoW: "+photoW);
-        Log.i(TAG, "targetH: "+targetH + " targetW: "+targetW);
-
-        if (photoH == 0 ||photoW == 0 || targetH==0 || targetW ==0) {
-
-            return;
-        }
-
-        // Determine how much to scale down the image
-        int scaleFactor = Math.min(photoW/targetW, photoH/targetH);
-
-        // Decode the image file into a Bitmap sized to fill the View
-        bmOptions.inJustDecodeBounds = false;
-        bmOptions.inSampleSize = scaleFactor;
-        Bitmap bitmap = BitmapFactory.decodeFile(photoPath, bmOptions);
-
-        //Set the bitmap to the ImageView
-        imageView.setImageBitmap(bitmap);
-    }
-
-
-    public void sendNotification(){
-
-        // : If not, create a PendingIntent using
-        // the
-        // restartMainActivityIntent and set its flags
-        // to FLAG_UPDATE_CURRENT
-
-        Intent restartDailySelfieIntent = new Intent(this, DailySelfieActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                mContext,
-                0,
-                restartDailySelfieIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT
-        );
-
-        // : Use the Notification.Builder class to
-        // create the Notification. You will have to set
-        // several pieces of information. You can use
-        // android.R.drawable.stat_sys_warning
-        // for the small icon. You should also
-        // setAutoCancel(true).
-
-        Notification.Builder notificationBuilder = new Notification.Builder(mContext)
-                .setAutoCancel(true)
-                .setSmallIcon(android.R.drawable.stat_sys_warning)
-                .setContentIntent(pendingIntent)
-                .setContentText("Take your daily selfie!")
-                .setTicker("Take your daily Selfie");
-
-        // : Send the notification
-        NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(NOTIFICATION_SERVICE);
-        notificationManager.notify(MY_NOTIFICATION_ID,notificationBuilder.build());
+        return true;
     }
 
     @Override
@@ -385,8 +258,6 @@ public class DailySelfieActivity extends ActionBarActivity {
         if (id == R.id.action_take) {
             //Take photo
             dispatchTakePictureIntent();
-
-
 
         }
 

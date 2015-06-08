@@ -12,6 +12,8 @@ public class DailySelfiePhoto extends Activity {
     private static final String TAG = "DailySelfiePhoto";
     ImageView photoView;
 
+    //pop up photo viewer activity, ahve to quit with the back button
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
