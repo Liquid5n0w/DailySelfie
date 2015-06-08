@@ -5,7 +5,7 @@
         android:orderInCategory="100" app:showAsAction="never" />
 
     <item android:id="@+id/action_take"
-        android:icon="@drawable/abc_switch_thumb_material"
+        android:icon="@mipmap/ic_face"
         android:title="@string/action_take"
         app:showAsAction="ifRoom"
         />

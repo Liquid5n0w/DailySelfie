@@ -15,12 +15,15 @@ import android.view.ViewGroup;
  */
 public class DailySelfieActivityFragment extends Fragment {
 
+    DailySelfieActivity parent;
+
     public DailySelfieActivityFragment() {
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        parent = (DailySelfieActivity) getActivity();
         return inflater.inflate(R.layout.fragment_daily_selfie, container, false);
     }
 

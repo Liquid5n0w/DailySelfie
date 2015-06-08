@@ -8,6 +8,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -18,15 +19,22 @@ import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -38,9 +46,13 @@ public class DailySelfieActivity extends ActionBarActivity {
 
     static final int MY_NOTIFICATION_ID = 1;
     private static final long ALARM_DELAY = 2*60*1000L;
+    private static final String PREFS = "prefs";
     private Context mContext;
     static final int REQUEST_IMAGE_CAPTURE = 1;
     AlarmManager mAlarmManager;
+    ArrayList<DailySelfieItem> dailySelfieItems;
+    DailySelfieAdaptor adapter;
+    ListView listView;
 
 //    private LocalBroadcastManager mBroadcastMgr;
 //    DailySelfieReceiver receiver;
@@ -54,6 +66,65 @@ public class DailySelfieActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_daily_selfie);
 
+        //setup arrayadaptor
+
+
+        listView = (ListView) findViewById(R.id.listView);
+/*
+        String[] values = new String[] { "Android List View",
+                "Adapter implementation",
+                "Simple List View In Android",
+                "Create List View Android",
+                "Android Example",
+                "List View Source Code",
+                "List View Array Adapter",
+                "Android Example List View"
+        };
+        */
+
+        dailySelfieItems = new ArrayList<>();
+
+
+
+
+
+        // Define a new Adapter
+        // First parameter - Context
+        // Second parameter - Layout for the row
+        // Third parameter - ID of the TextView to which the data is written
+        // Forth - the Array of data
+
+
+        adapter = new DailySelfieAdaptor(this, dailySelfieItems);
+
+        // Assign adapter to ListView
+        listView.setAdapter(adapter);
+
+        // ListView Item Click Listener
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view,
+                                    int position, long id) {
+
+
+                String filepath = (String) ((TextView) view.findViewById(R.id.path)).getText();
+
+                Intent i = new Intent(DailySelfieActivity.this, DailySelfiePhoto.class);
+                i.putExtra("data",filepath);
+                Log.i(TAG, "Launching intent");
+                startActivity(i);
+
+
+                // Show Alert
+                /*
+                Toast.makeText(getApplicationContext(),
+                        "Position :" + position + "  ListItem : " , Toast.LENGTH_LONG)
+                        .show();
+*/
+            }
+
+        });
 
 
         mContext = getApplicationContext();
@@ -78,14 +149,13 @@ public class DailySelfieActivity extends ActionBarActivity {
         Log.i(TAG, "Sys time: " + System.currentTimeMillis());
         Log.i(TAG, "set for : " + set);
 
-        //TODO Disabled alarm
-        /*
+
         mAlarmManager.setRepeating(
                 AlarmManager.RTC_WAKEUP,
                 set,
                 ALARM_DELAY,
                 mNotificationReceiverPendingIntent);
-*/
+
 
 
 
@@ -93,7 +163,30 @@ public class DailySelfieActivity extends ActionBarActivity {
 
 
 
+        SharedPreferences settings = getSharedPreferences(PREFS ,MODE_PRIVATE);
+        int size = settings.getInt("size", -1);
+        if (size > 0){
+            for (int i = 0; i<size; i++)
+                dailySelfieItems.add(new DailySelfieItem(settings.getString(""+i, "")));
+            adapter.notifyDataSetChanged();
+        }
 
+
+    }
+
+    public void onPause(){
+        super.onPause();
+
+        SharedPreferences settings = getSharedPreferences(PREFS ,MODE_PRIVATE);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putInt("size", listView.getCount());
+        TextView pathView;
+        for (int i = 0; i < listView.getCount(); i++){
+            pathView = (TextView) listView.getChildAt(i).findViewById(R.id.path);
+
+            editor.putString("" + i, (String) pathView.getText());
+        }
+        editor.commit();
     }
 
 
@@ -146,8 +239,27 @@ public class DailySelfieActivity extends ActionBarActivity {
 
             Log.i(TAG, mCurrentPhotoPath);
 
+
             //Set image to the imageview
-            setPic((ImageView) findViewById(R.id.imageView), mCurrentPhotoPath);
+
+
+            //setPic((ImageView) findViewById(R.id.imageView), mCurrentPhotoPath);
+
+
+
+//            DailySelfieItem item = new DailySelfieItem(mCurrentPhotoPath, (ImageView) selfieItemView.findViewById(R.id.thumbnail));
+            DailySelfieItem item = new DailySelfieItem(mCurrentPhotoPath);
+
+
+            dailySelfieItems.add(item);
+//            int index = (dailySelfieItems.lastIndexOf(item));
+
+
+            adapter.notifyDataSetChanged();
+
+
+            //item.setPic((ImageView) listView.findViewById(R.id.thumbnail));
+
         }
     }
 
@@ -166,7 +278,7 @@ public class DailySelfieActivity extends ActionBarActivity {
         );
 
         // Save a file: path for use with ACTION_VIEW intents
-        mCurrentPhotoPath = "file:" + image.getAbsolutePath();
+        mCurrentPhotoPath = image.getAbsolutePath();
         return image;
     }
 
@@ -186,7 +298,7 @@ public class DailySelfieActivity extends ActionBarActivity {
     example method demonstrates this technique.
     */
 
-    private void setPic(ImageView imageView, String photoPath) {
+    public static void setPic(ImageView imageView, String photoPath) {
         // Get the dimensions of the View
         int targetW = imageView.getWidth();
         int targetH = imageView.getHeight();
@@ -195,8 +307,8 @@ public class DailySelfieActivity extends ActionBarActivity {
         BitmapFactory.Options bmOptions = new BitmapFactory.Options();
         bmOptions.inJustDecodeBounds = true;
 
-        //TODO can't find the file to open
-//        BitmapFactory.decodeFile(photoPath, bmOptions);
+
+        //BitmapFactory.decodeFile(photoPath, bmOptions);
 
         try {
             BitmapFactory.decodeStream(new FileInputStream(photoPath), null, bmOptions);
@@ -209,7 +321,7 @@ public class DailySelfieActivity extends ActionBarActivity {
         Log.i(TAG, "photoH: "+photoH + " photoW: "+photoW);
         Log.i(TAG, "targetH: "+targetH + " targetW: "+targetW);
 
-        if (photoH == 0 ||photoW == 0) {
+        if (photoH == 0 ||photoW == 0 || targetH==0 || targetW ==0) {
 
             return;
         }
@@ -257,7 +369,7 @@ public class DailySelfieActivity extends ActionBarActivity {
                 .setTicker("Take your daily Selfie");
 
         // : Send the notification
-        NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(mContext.NOTIFICATION_SERVICE);
+        NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(NOTIFICATION_SERVICE);
         notificationManager.notify(MY_NOTIFICATION_ID,notificationBuilder.build());
     }
 
